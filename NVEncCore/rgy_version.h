@@ -80,14 +80,38 @@ const char *get_encoder_version();
 #define AV_CHANNEL_LAYOUT_STRUCT_AVAIL 1
 #define AV_FRAME_DURATION_AVAIL 1
 #define AVCODEC_PAR_CODED_SIDE_DATA_AVAIL 1
-#define ENABLE_LIBASS_SUBBURN 1
 #define ENABLE_D3D11 1
 #define ENABLE_D3D11_DEVINFO_WMI 1
+#define ENABLE_VULKAN 0
+#define AVS_INTERF_VER 11
+
+#if defined(__has_include)
+#if __has_include(<ass/ass.h>)
+#define ENABLE_LIBASS_SUBBURN 1
+#else
+#define ENABLE_LIBASS_SUBBURN 0
+#endif
+#if __has_include(<libplacebo/dispatch.h>)
+#define ENABLE_LIBPLACEBO 1
+#else
+#define ENABLE_LIBPLACEBO 0
+#endif
+#if __has_include(<libdovi/rpu_parser.h>)
+#define ENABLE_LIBDOVI 1
+#else
+#define ENABLE_LIBDOVI 0
+#endif
+#if __has_include(<libhdr10plus-rs/hdr10plus.h>)
+#define ENABLE_LIBHDR10PLUS 1
+#else
+#define ENABLE_LIBHDR10PLUS 0
+#endif
+#else
+#define ENABLE_LIBASS_SUBBURN 1
 #define ENABLE_LIBPLACEBO 1
 #define ENABLE_LIBDOVI 1
 #define ENABLE_LIBHDR10PLUS 1
-#define ENABLE_VULKAN 0
-#define AVS_INTERF_VER 11
+#endif
 
 #ifndef ENABLE_NVOFFRUC_HEADER
 #define ENABLE_NVOFFRUC_HEADER 0
@@ -103,7 +127,15 @@ const char *get_encoder_version();
 #else
 #define ENABLE_NVML 1
 #define ENABLE_NVRTC 1
+#if defined(__has_include)
+#if __has_include(<libvmaf/libvmaf.h>)
 #define ENABLE_VMAF 1
+#else
+#define ENABLE_VMAF 0
+#endif
+#else
+#define ENABLE_VMAF 1
+#endif
 #define ENABLE_NVVFX 1
 #define ENABLE_NVOFFRUC 1
 #define ENABLE_NVSDKNGX 1
@@ -131,8 +163,24 @@ const char *get_encoder_version();
 #define FOR_AUO                   0
 #define ENABLE_RAW_READER         1
 #define ENABLE_AVI_READER         1
+#if defined(__has_include)
+#if __has_include("avisynth_c.h")
 #define ENABLE_AVISYNTH_READER    1
+#else
+#define ENABLE_AVISYNTH_READER    0
+#endif
+#else
+#define ENABLE_AVISYNTH_READER    1
+#endif
+#if defined(__has_include)
+#if __has_include("VapourSynth.h") && __has_include("VSScript.h") && __has_include("VSScript4.h")
 #define ENABLE_VAPOURSYNTH_READER 1
+#else
+#define ENABLE_VAPOURSYNTH_READER 0
+#endif
+#else
+#define ENABLE_VAPOURSYNTH_READER 1
+#endif
 #define ENABLE_AVSW_READER        1
 #define ENABLE_SM_READER          1
 #define ENABLE_LIBAVDEVICE        1

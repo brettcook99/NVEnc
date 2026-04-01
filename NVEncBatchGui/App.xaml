@@ -1,0 +1,26 @@
+<Application
+    x:Class="NVEncBatchGui.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Microsoft.UI.Xaml.Controls">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <controls:XamlControlsResources />
+            </ResourceDictionary.MergedDictionaries>
+            <LinearGradientBrush x:Key="BatchHeroBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#172554" Offset="0" />
+                <GradientStop Color="#0F172A" Offset="0.55" />
+                <GradientStop Color="#083344" Offset="1" />
+            </LinearGradientBrush>
+            <SolidColorBrush x:Key="BatchWindowBackgroundBrush" Color="#09111F" />
+            <SolidColorBrush x:Key="BatchCardBackgroundBrush" Color="#111827" />
+            <SolidColorBrush x:Key="BatchCardAltBackgroundBrush" Color="#172033" />
+            <SolidColorBrush x:Key="BatchCardBorderBrush" Color="#29354A" />
+            <SolidColorBrush x:Key="BatchHeroBadgeBackgroundBrush" Color="#CC111827" />
+            <SolidColorBrush x:Key="BatchAccentSurfaceBrush" Color="#0F172A" />
+            <SolidColorBrush x:Key="BatchMutedForegroundBrush" Color="#9FB0C8" />
+            <SolidColorBrush x:Key="BatchDetailForegroundBrush" Color="#CBD5E1" />
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

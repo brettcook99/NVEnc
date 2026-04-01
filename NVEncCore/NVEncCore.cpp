@@ -472,6 +472,7 @@ RGY_ERR NVEncCore::InitChapters(const InEncodeVideoParam *inputParam) {
 
 RGY_ERR NVEncCore::InitInput(InEncodeVideoParam *inputParam, DeviceCodecCsp& HWDecCodecCsp) {
     m_pStatus.reset(new EncodeStatus());
+    m_pStatus->SetTelemetryJsonTarget(inputParam->ctrl.telemetryJson);
 
     int subburnTrackId = 0;
     for (const auto &subburn : inputParam->vpp.subburn) {

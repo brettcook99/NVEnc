@@ -37,6 +37,7 @@
 #include <cmath>
 #include <numeric>
 #include <algorithm>
+#include "..\json\json.hpp"
 #include "rgy_log.h"
 #include "cpu_info.h"
 #include "rgy_err.h"
@@ -44,6 +45,8 @@
 #include "rgy_parallel_enc.h"
 #include "gpuz_info.h"
 #include "rgy_status.h"
+
+static const char *RGY_TELEMETRY_JSON_PREFIX = "NVENCC_TELEMETRY_JSON ";
 
 EncodeStatus::EncodeStatus() :
     m_sData(),
@@ -56,7 +59,9 @@ EncodeStatus::EncodeStatus() :
     m_peStatusShare(nullptr),
     m_childStatus(),
     m_bStdErrWriteToConsole(false),
-    m_bEncStarted(false) {
+    m_bEncStarted(false),
+    m_emitTelemetryJson(false),
+    m_emitTelemetryJsonToStdErr(false) {
 }
 EncodeStatus::~EncodeStatus() {
     if (m_pRGYLog) m_pRGYLog->write_log(RGY_LOG_DEBUG, RGY_LOGT_CORE, _T("Closing EncodeStatus...\n"));
@@ -110,6 +115,19 @@ void EncodeStatus::SetOutputData(RGY_FRAMETYPE picType, uint64_t outputBytes, ui
     m_sData.frameOutPQPSum += (0-((picType & RGY_FRAMETYPE_P)   >> 1)) & frameAvgQP;
     m_sData.frameOutBQPSum += (0-((picType & RGY_FRAMETYPE_B)   >> 2)) & frameAvgQP;
 }
+
+void EncodeStatus::SetTelemetryJsonTarget(const tstring& target) {
+    m_emitTelemetryJson = false;
+    m_emitTelemetryJsonToStdErr = false;
+    if (_tcsicmp(target.c_str(), _T("stdout")) == 0) {
+        m_emitTelemetryJson = true;
+        m_emitTelemetryJsonToStdErr = false;
+    } else if (_tcsicmp(target.c_str(), _T("stderr")) == 0) {
+        m_emitTelemetryJson = true;
+        m_emitTelemetryJsonToStdErr = true;
+    }
+}
+
 #pragma warning(push)
 #pragma warning(disable: 4100)
 void EncodeStatus::UpdateDisplay(const TCHAR *mes, double progressPercent) {
@@ -275,6 +293,10 @@ RGY_ERR EncodeStatus::UpdateDisplay(double progressPercent) {
             c.len = 0;
         }
         double totalProgressPercent = 0.0;
+        const auto totalOutFileSize = (childStsList.size() == 0)
+            ? m_sData.outFileSize
+            : std::accumulate(childStsList.begin(), childStsList.end(), 0llu, [](uint64_t sum, const EncodeStatusData& child) { return sum + child.outFileSize; });
+        int64_t remainingTimeMs = -1;
         if (m_sData.frameTotal > 0 || progressPercent > 0.0) { //progress percent
             totalProgressPercent = (childStsList.size() == 0)
                 ? progressPercent
@@ -291,19 +313,17 @@ RGY_ERR EncodeStatus::UpdateDisplay(double progressPercent) {
                 totalProgressPercent = totalFrameIn * 100 / (double)m_sData.frameTotal;
             }
             totalProgressPercent = (std::min)(totalProgressPercent, 100.0);
-            uint32_t remaining_time = (uint32_t)(elapsedTime * (100.0 - totalProgressPercent) / totalProgressPercent + 0.5);
-            const int hh = remaining_time / (60*60*1000);
+            remainingTimeMs = (int64_t)(elapsedTime * (100.0 - totalProgressPercent) / totalProgressPercent + 0.5);
+            auto remaining_time = remainingTimeMs;
+            const int hh = (int)(remaining_time / (60*60*1000));
             remaining_time -= hh * (60*60*1000);
-            const int mm = remaining_time / (60*1000);
+            const int mm = (int)(remaining_time / (60*1000));
             remaining_time -= mm * (60*1000);
-            const int ss = remaining_time / 1000;
+            const int ss = (int)(remaining_time / 1000);
 
             chunks[MES_PROGRESS_PERCENT].len = _stprintf_s(chunks[MES_PROGRESS_PERCENT].str, _T("[%.1lf%%] "), totalProgressPercent);
             chunks[MES_REMAIN].len           = _stprintf_s(chunks[MES_REMAIN].str, _T(", remain %d:%02d:%02d"), hh, mm, ss);
 
-            const auto totalOutFileSize = (childStsList.size() == 0)
-                ? m_sData.outFileSize
-                : std::accumulate(childStsList.begin(), childStsList.end(), 0llu, [](uint64_t sum, const EncodeStatusData& child) { return sum + child.outFileSize; });
             const double est_file_size = (double)totalOutFileSize / (totalProgressPercent * 0.01);
             chunks[MES_EST_FILE_SIZE].len = _stprintf_s(chunks[MES_EST_FILE_SIZE].str, _T(", est out size %.1fMB"), est_file_size * (1.0 / (1024.0 * 1024.0)));
         }
@@ -377,6 +397,9 @@ RGY_ERR EncodeStatus::UpdateDisplay(double progressPercent) {
             m_peStatusShare->set(m_sData);
         }
         UpdateDisplay(mes, progressPercent);
+        EmitTelemetryProgress(totalProgressPercent, totalFrameOut, m_sData.frameTotal, totalEncodeFps, totalBitrateKbps,
+            totalOutFileSize, (int64_t)elapsedTime, remainingTimeMs,
+            bGPUUsage, gpuusage, bVideoEngineUsage, gpuencoder_usage, gpudecoder_usage);
     }
     return RGY_ERR_NONE;
 }
@@ -462,6 +485,7 @@ void EncodeStatus::WriteResults() {
     WriteFrameTypeResult(_T("frame type I   "), m_sData.frameOutI, maxCount, m_sData.frameOutISize, maxFrameSize, (m_sData.frameOutI && m_sData.frameOutIQPSum) ? m_sData.frameOutIQPSum / (double)m_sData.frameOutI : -1);
     WriteFrameTypeResult(_T("frame type P   "), m_sData.frameOutP, maxCount, m_sData.frameOutPSize, maxFrameSize, (m_sData.frameOutP && m_sData.frameOutPQPSum) ? m_sData.frameOutPQPSum / (double)m_sData.frameOutP : -1);
     WriteFrameTypeResult(_T("frame type B   "), m_sData.frameOutB, maxCount, m_sData.frameOutBSize, maxFrameSize, (m_sData.frameOutB && m_sData.frameOutBQPSum) ? m_sData.frameOutBQPSum / (double)m_sData.frameOutB : -1);
+    EmitTelemetryResult(time_elapsed64);
 }
 int64_t EncodeStatus::getStartTimeMicroSec() {
 #if defined(_WIN32) || defined(_WIN64)
@@ -499,6 +523,90 @@ void EncodeStatus::WriteResultLineDirect(const TCHAR *mes) {
     }
     m_pRGYLog->write_log(RGY_LOG_INFO, RGY_LOGT_CORE_RESULT, mes);
 }
+void EncodeStatus::EmitTelemetryProgress(double totalProgressPercent, uint32_t totalFrameOut, uint32_t frameTotal, double totalEncodeFps,
+    double totalBitrateKbps, uint64_t totalOutFileSize, int64_t elapsedTimeMs, int64_t remainingTimeMs,
+    bool bGPUUsage, double gpuusage, bool bVideoEngineUsage, double gpuencoder_usage, double gpudecoder_usage) {
+    if (!m_emitTelemetryJson) {
+        return;
+    }
+    nlohmann::ordered_json telemetry = {
+        { "event", "progress" },
+        { "percent", totalProgressPercent },
+        { "frameOut", totalFrameOut },
+        { "fps", totalEncodeFps },
+        { "bitrateKbps", totalBitrateKbps },
+        { "elapsedSeconds", elapsedTimeMs / 1000.0 },
+        { "outputSizeBytes", totalOutFileSize },
+        { "outputSizeMb", totalOutFileSize / (1024.0 * 1024.0) },
+        { "droppedFrames", m_sData.frameDrop }
+    };
+    if (frameTotal > 0) {
+        telemetry["frameTotal"] = frameTotal;
+    }
+    if (remainingTimeMs >= 0) {
+        telemetry["remainingSeconds"] = remainingTimeMs / 1000.0;
+    }
+    if (totalProgressPercent > 0.0) {
+        telemetry["estimatedSizeMb"] = (totalOutFileSize / (totalProgressPercent * 0.01)) / (1024.0 * 1024.0);
+    }
+    if (bGPUUsage) {
+        telemetry["gpu"] = std::min(gpuusage, 100.0);
+        if (bVideoEngineUsage) {
+            telemetry["videoEncoder"] = std::min(gpuencoder_usage, 100.0);
+        }
+        if (gpudecoder_usage > 0.0) {
+            telemetry["videoDecoder"] = std::min(gpudecoder_usage, 100.0);
+        }
+    }
+    WriteTelemetryLine(std::string(RGY_TELEMETRY_JSON_PREFIX) + telemetry.dump());
+}
+
+void EncodeStatus::EmitTelemetryResult(int64_t timeElapsedMs) {
+    if (!m_emitTelemetryJson) {
+        return;
+    }
+    nlohmann::ordered_json telemetry = {
+        { "event", "result" },
+        { "frameOut", m_sData.frameOut },
+        { "fps", m_sData.encodeFps },
+        { "bitrateKbps", m_sData.bitrateKbps },
+        { "elapsedSeconds", timeElapsedMs / 1000.0 },
+        { "outputSizeBytes", m_sData.outFileSize },
+        { "outputSizeMb", m_sData.outFileSize / (1024.0 * 1024.0) },
+        { "cpuUsage", m_sData.CPUUsagePercent },
+        { "droppedFrames", m_sData.frameDrop }
+    };
+    if (m_sData.frameTotal > 0) {
+        telemetry["frameTotal"] = m_sData.frameTotal;
+    }
+    if (m_sData.GPUInfoCountSuccess > m_sData.GPUInfoCountFail) {
+        telemetry["gpu"] = std::min(m_sData.GPULoadPercentTotal / m_sData.GPUInfoCountSuccess, 100.0);
+        telemetry["videoEncoder"] = std::min(m_sData.VEELoadPercentTotal / m_sData.GPUInfoCountSuccess, 100.0);
+        telemetry["videoDecoder"] = std::min(m_sData.VEDLoadPercentTotal / m_sData.GPUInfoCountSuccess, 100.0);
+        const auto gpuClockAvg = (int)(m_sData.GPUClockTotal / m_sData.GPUInfoCountSuccess + 0.5);
+        if (gpuClockAvg > 0) {
+            telemetry["gpuClockMHz"] = gpuClockAvg;
+        }
+#if ENABLE_NVML
+        const auto veClockAvg = (int)(m_sData.VEClockTotal / m_sData.GPUInfoCountSuccess + 0.5);
+        if (veClockAvg > 0) {
+            telemetry["videoEncoderClockMHz"] = veClockAvg;
+        }
+#endif
+    }
+    WriteTelemetryLine(std::string(RGY_TELEMETRY_JSON_PREFIX) + telemetry.dump());
+}
+
+void EncodeStatus::WriteTelemetryLine(const std::string& telemetry) {
+    if (!m_emitTelemetryJson) {
+        return;
+    }
+    FILE *stream = (m_emitTelemetryJsonToStdErr) ? stderr : stdout;
+    fwrite(telemetry.data(), 1, telemetry.size(), stream);
+    fputc('\n', stream);
+    fflush(stream);
+}
+
 void EncodeStatus::WriteFrameTypeResult(const TCHAR *header, uint32_t count, uint32_t maxCount, uint64_t frameSize, uint64_t maxFrameSize, double avgQP) {
     if (count) {
         TCHAR mes[512] = { 0 };

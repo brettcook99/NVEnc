@@ -43,9 +43,10 @@ setx OPTICAL_FLOW_SDK "<...>\Optical_Flow_SDK_5.0.7"
 ```Batchfile
 git clone https://github.com/rigaya/NVEnc --recursive
 cd NVEnc
-curl -s -o ffmpeg_lgpl.7z -L https://github.com/rigaya/ffmpeg_dlls_for_hwenc/releases/download/20250830/ffmpeg_dlls_for_hwenc_20250830.7z
-7z x -offmpeg_lgpl -y ffmpeg_lgpl.7z
+powershell -ExecutionPolicy Bypass -File .\BuildParallel\SetupFFmpegLgpl.ps1
 ```
+
+このスクリプトは、固定バージョンの `ffmpeg_dlls_for_hwenc` を `ffmpeg_lgpl` に展開し、必要な FFmpeg 62 系 DLL を確認したうえで、既存の x64 ビルド出力先にも自動で配置します。
 
 ### 3. NVEnc.auo / NVEncC のビルド
 

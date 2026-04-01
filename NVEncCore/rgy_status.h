@@ -103,6 +103,7 @@ public:
 
     void SetStart();
     void SetOutputData(RGY_FRAMETYPE picType, uint64_t outputBytes, uint32_t frameAvgQP);
+    void SetTelemetryJsonTarget(const tstring& target);
     virtual void UpdateDisplay(const TCHAR *mes, double progressPercent = 0.0);
 
     virtual RGY_ERR UpdateDisplayByCurrentDuration(double currentDuration);
@@ -117,6 +118,11 @@ public:
 protected:
     virtual void WriteResultLine(const TCHAR *mes);
     virtual void WriteResultLineDirect(const TCHAR *mes);
+    void EmitTelemetryProgress(double totalProgressPercent, uint32_t totalFrameOut, uint32_t frameTotal, double totalEncodeFps,
+        double totalBitrateKbps, uint64_t totalOutFileSize, int64_t elapsedTimeMs, int64_t remainingTimeMs,
+        bool bGPUUsage, double gpuusage, bool bVideoEngineUsage, double gpuencoder_usage, double gpudecoder_usage);
+    void EmitTelemetryResult(int64_t timeElapsedMs);
+    void WriteTelemetryLine(const std::string& telemetry);
     void WriteFrameTypeResult(const TCHAR *header, uint32_t count, uint32_t maxCount, uint64_t frameSize, uint64_t maxFrameSize, double avgQP);
 
     bool m_pause;
@@ -129,6 +135,8 @@ protected:
     std::vector<std::pair<double, RGYParallelEncodeStatusData*>> m_childStatus; // 親側で使用する、子エンコーダの担当割合と子エンコーダから進捗表示を取得するクラスへのポインタ (実体はRGYParallelEncProcess::m_sendData::encStatus)
     bool m_bStdErrWriteToConsole;
     bool m_bEncStarted;
+    bool m_emitTelemetryJson;
+    bool m_emitTelemetryJsonToStdErr;
 };
 
 class CProcSpeedControl {

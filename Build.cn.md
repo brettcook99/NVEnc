@@ -38,9 +38,10 @@ setx VAPOURSYNTH_SDK "C:\Program Files (x86)\VapourSynth\sdk"
 ```Batchfile
 git clone https://github.com/rigaya/NVEnc --recursive
 cd NVEnc
-curl -s -o ffmpeg_lgpl.7z -L https://github.com/rigaya/ffmpeg_dlls_for_hwenc/releases/download/20250830/ffmpeg_dlls_for_hwenc_20250830.7z
-7z x -offmpeg_lgpl -y ffmpeg_lgpl.7z
+powershell -ExecutionPolicy Bypass -File .\BuildParallel\SetupFFmpegLgpl.ps1
 ```
+
+该脚本会下载固定版本的 `ffmpeg_dlls_for_hwenc` 到 `ffmpeg_lgpl`，校验所需的 FFmpeg 62 运行时 DLL，并把这些 DLL 自动复制到当前已有的 x64 构建输出目录。
 
 ## 3. 构建 NVEncC.exe / NVEnc.auo
 

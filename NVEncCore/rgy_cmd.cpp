@@ -7053,6 +7053,15 @@ int parse_one_ctrl_option(const TCHAR *option_name, const TCHAR *strInput[], int
         ctrl->perfMonitorInterval = std::max(50, v);
         return 0;
     }
+    if (IS_OPTION("telemetry-json")) {
+        i++;
+        if (_tcsicmp(strInput[i], _T("stdout")) != 0 && _tcsicmp(strInput[i], _T("stderr")) != 0) {
+            print_cmd_error_invalid_value(option_name, strInput[i], _T("telemetry-json should be stdout or stderr.\n"));
+            return 1;
+        }
+        ctrl->telemetryJson = strInput[i];
+        return 0;
+    }
     if (IS_OPTION("parent-pid")) {
         i++;
         try {
@@ -8615,6 +8624,7 @@ tstring gen_cmd(const RGYParamControl *param, const RGYParamControl *defaultPrm,
     OPT_BOOL(_T("--lowlatency"), _T(""), lowLatency);
     OPT_BOOL(_T("--fallback-bitdepth"), _T(""), fallbackBitdepth);
     OPT_STR_PATH(_T("--log"), logfile);
+    OPT_TSTR(_T("--telemetry-json"), telemetryJson);
     if (param->loglevel != defaultPrm->loglevel) {
         cmd << _T(" --log-level ") << param->loglevel.to_string();
     }
@@ -9771,6 +9781,8 @@ tstring gen_cmd_help_ctrl() {
         _T("   --parallel <int> or auto     Enable parallel encoding by file splitting.\n")
 #endif
         _T("   --log <string>               set log file name\n")
+    _T("   --telemetry-json <string>    emit machine-readable progress/result JSON.\n")
+    _T("                                  stdout, stderr\n")
         _T("   --log-level <string>         set log level\n")
         _T("                                  debug, info(default), warn, error, quiet\n")
         _T("   --log-opt [<param1>][,<param2>][]...\n")

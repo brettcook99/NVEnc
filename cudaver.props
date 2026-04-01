@@ -1,6 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
+  <PropertyGroup>
+    <CUDA_PATH_V13_2 Condition="'$(CUDA_PATH_V13_2)' == '' and Exists('C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.2\include\cuda.h')">C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.2</CUDA_PATH_V13_2>
+    <CUDA_PATH Condition="'$(CUDA_PATH)' == '' and '$(CUDA_PATH_V13_2)' != ''">$(CUDA_PATH_V13_2)</CUDA_PATH>
+  </PropertyGroup>
   <PropertyGroup Label="UserMacros" Condition="'$(CUDA_PATH)' == '$(CUDA_PATH_V8_0)'" >
     <CUDA_MAJOR_VER>8</CUDA_MAJOR_VER>
     <CUDA_MINOR_VER>0</CUDA_MINOR_VER>
@@ -269,6 +273,16 @@
     <CUDA_CODE_GEN>compute_75,compute_75;compute_86,compute_86;compute_120,compute_120</CUDA_CODE_GEN>
     <NVRTC_DLL_NAME>nvrtc64_130_0.dll</NVRTC_DLL_NAME>
     <NVRTC_BUILTIN_DLL_NAME>nvrtc-builtins64_130.dll</NVRTC_BUILTIN_DLL_NAME>
+    <NPPI_DLL_NAME>nppc64_13.dll</NPPI_DLL_NAME>
+  </PropertyGroup>
+  <PropertyGroup Label="UserMacros" Condition="'$(CUDA_PATH)' == '$(CUDA_PATH_V13_2)'" >
+    <CUDA_MAJOR_VER>13</CUDA_MAJOR_VER>
+    <CUDA_MINOR_VER>2</CUDA_MINOR_VER>
+    <CUDA_THREADS>-t 0</CUDA_THREADS>
+    <CUDA_VER>$(CUDA_MAJOR_VER).$(CUDA_MINOR_VER)</CUDA_VER>
+    <CUDA_CODE_GEN>compute_75,compute_75;compute_86,compute_86;compute_120,compute_120</CUDA_CODE_GEN>
+    <NVRTC_DLL_NAME>nvrtc64_130_0.dll</NVRTC_DLL_NAME>
+    <NVRTC_BUILTIN_DLL_NAME>nvrtc-builtins64_132.dll</NVRTC_BUILTIN_DLL_NAME>
     <NPPI_DLL_NAME>nppc64_13.dll</NPPI_DLL_NAME>
   </PropertyGroup>
   <ImportGroup Label="ExtensionSettings">

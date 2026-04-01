@@ -1,0 +1,191 @@
+<Window
+    x:Class="NVEncBatchGui.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:NVEncBatchGui.Models"
+    Title="NVEnc Batch">
+    <Grid RequestedTheme="Dark" Background="{StaticResource BatchWindowBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Padding="28,24">
+            <Border.Background>
+                <StaticResource ResourceKey="BatchHeroBackgroundBrush" />
+            </Border.Background>
+
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                <TextBlock FontFamily="Segoe UI Variable Display" FontSize="30" FontWeight="SemiBold" Text="NVEnc Batch Queue" />
+                <TextBlock Grid.Row="1" Margin="0,10,0,0" MaxWidth="900" Opacity="0.8" Text="Source-driven NVEncC batch runner with queue control, graceful interruption, native JSON telemetry, adaptive concurrency, and persisted session state. Jobs default to H.264 MP4 with aspect-safe downscaling and report GPU, VE, VD, fps, bitrate, ETA, and final completion summaries." TextWrapping="WrapWholeWords" />
+                <Border Grid.Column="1" Padding="14,10" CornerRadius="14" Background="{StaticResource BatchHeroBadgeBackgroundBrush}" HorizontalAlignment="Right" VerticalAlignment="Top">
+                    <StackPanel>
+                        <TextBlock FontSize="12" Opacity="0.65" Text="Target" />
+                        <TextBlock FontFamily="Segoe UI Variable Text" FontSize="16" FontWeight="SemiBold" Text="RTX 5090 saturation" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Padding="28,24,28,28" ColumnDefinitions="420,*" ColumnSpacing="24">
+            <Border Padding="18" Background="{StaticResource BatchCardBackgroundBrush}" BorderBrush="{StaticResource BatchCardBorderBrush}" BorderThickness="1" CornerRadius="18">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="16">
+                        <TextBlock FontFamily="Segoe UI Variable Text" FontSize="22" FontWeight="SemiBold" Text="Batch Settings" />
+
+                        <StackPanel Spacing="8">
+                            <TextBlock FontWeight="SemiBold" Text="NVEncC executable" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <TextBox x:Name="EncoderPathTextBox" PlaceholderText="Build or browse to NVEncC64.exe" />
+                                <Button Grid.Column="1" Click="BrowseEncoderButton_Click" Content="Browse" />
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock FontWeight="SemiBold" Text="Output directory" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <TextBox x:Name="OutputDirectoryTextBox" PlaceholderText="Select an output folder" />
+                                <Button Grid.Column="1" Click="BrowseOutputButton_Click" Content="Browse" />
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock FontWeight="SemiBold" Text="Target size" />
+                            <ComboBox x:Name="ResolutionComboBox" SelectionChanged="ResolutionComboBox_SelectionChanged">
+                                <ComboBoxItem Content="240p" IsSelected="True" />
+                                <ComboBoxItem Content="360p" />
+                                <ComboBoxItem Content="480p" />
+                                <ComboBoxItem Content="720p" />
+                            </ComboBox>
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock FontWeight="SemiBold" Text="Decode mode" />
+                            <ComboBox x:Name="DecodeModeComboBox">
+                                <ComboBoxItem Content="Auto" IsSelected="True" Tag="Auto" />
+                                <ComboBoxItem Content="Hardware" Tag="Hardware" />
+                                <ComboBoxItem Content="Software" Tag="Software" />
+                            </ComboBox>
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock FontWeight="SemiBold" Text="Max hardware decode jobs" />
+                            <NumberBox x:Name="MaxHardwareDecodeJobsNumberBox" Maximum="64" Minimum="0" SmallChange="1" SpinButtonPlacementMode="Inline" Value="4" />
+                            <TextBlock Opacity="0.7" Text="Additional jobs fall back to software decode." TextWrapping="WrapWholeWords" />
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                            <CheckBox x:Name="IncludeAudioCheckBox" Content="Include audio" IsChecked="True" />
+                            <CheckBox x:Name="SaturationCheckBox" Grid.Column="1" Content="Maximize encoder saturation" IsChecked="True" />
+                        </Grid>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock FontWeight="SemiBold" Text="Max concurrent jobs" />
+                            <NumberBox x:Name="MaxConcurrentJobsNumberBox" Maximum="64" Minimum="1" SmallChange="1" SpinButtonPlacementMode="Inline" Value="12" />
+                        </StackPanel>
+
+                        <Border Padding="14" Background="{StaticResource BatchCardAltBackgroundBrush}" BorderBrush="{StaticResource BatchCardBorderBrush}" BorderThickness="1" CornerRadius="14">
+                            <StackPanel Spacing="10">
+                                <TextBlock FontWeight="SemiBold" Text="Queue actions" />
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                    <Button x:Name="AddVideosButton" Click="AddVideosButton_Click" Content="Add videos" />
+                                    <Button x:Name="RemoveSelectedButton" Grid.Column="1" Click="RemoveSelectedButton_Click" Content="Remove selected" />
+                                </Grid>
+                                <Button x:Name="ClearCompletedButton" Click="ClearCompletedButton_Click" Content="Clear finished" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Padding="14" Background="{StaticResource BatchAccentSurfaceBrush}" CornerRadius="14">
+                            <StackPanel Spacing="10">
+                                <TextBlock Foreground="White" FontWeight="SemiBold" Text="Execution" />
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                    <Button x:Name="StartBatchButton" Click="StartBatchButton_Click" Content="Start batch" />
+                                    <Button x:Name="StopBatchButton" Grid.Column="1" Click="StopBatchButton_Click" Content="Stop batch" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*" RowSpacing="18">
+                <Border Padding="16" Background="{StaticResource BatchAccentSurfaceBrush}" CornerRadius="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock x:Name="StatusBannerTextBlock" Foreground="White" FontFamily="Segoe UI Variable Text" FontSize="16" FontWeight="SemiBold" Text="Initializing workspace state..." TextWrapping="WrapWholeWords" />
+                        <TextBlock x:Name="SchedulerDiagnosticsTextBlock" Foreground="{StaticResource BatchDetailForegroundBrush}" Opacity="0.95" Text="Scheduler diagnostics will appear here." TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                </Border>
+
+                <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
+                    <Border Padding="16" Background="{StaticResource BatchCardBackgroundBrush}" BorderBrush="{StaticResource BatchCardBorderBrush}" BorderThickness="1" CornerRadius="16">
+                        <StackPanel>
+                            <TextBlock Opacity="0.7" Text="Jobs" />
+                            <TextBlock x:Name="TotalJobsValueText" FontFamily="Segoe UI Variable Display" FontSize="28" FontWeight="SemiBold" Text="0" />
+                            <TextBlock x:Name="JobStateSummaryText" Opacity="0.75" Text="0 running / 0 pending" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Padding="16" Background="{StaticResource BatchCardBackgroundBrush}" BorderBrush="{StaticResource BatchCardBorderBrush}" BorderThickness="1" CornerRadius="16">
+                        <StackPanel>
+                            <TextBlock Opacity="0.7" Text="Aggregate FPS" />
+                            <TextBlock x:Name="AggregateFpsValueText" FontFamily="Segoe UI Variable Display" FontSize="28" FontWeight="SemiBold" Text="0.00" />
+                            <TextBlock Opacity="0.75" Text="Across active jobs" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Padding="16" Background="{StaticResource BatchCardBackgroundBrush}" BorderBrush="{StaticResource BatchCardBorderBrush}" BorderThickness="1" CornerRadius="16">
+                        <StackPanel>
+                            <TextBlock Opacity="0.7" Text="Aggregate bitrate" />
+                            <TextBlock x:Name="AggregateBitrateValueText" FontFamily="Segoe UI Variable Display" FontSize="28" FontWeight="SemiBold" Text="0 kbps" />
+                            <TextBlock Opacity="0.75" Text="Live output rate" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="3" Padding="16" Background="{StaticResource BatchCardBackgroundBrush}" BorderBrush="{StaticResource BatchCardBorderBrush}" BorderThickness="1" CornerRadius="16">
+                        <StackPanel>
+                            <TextBlock Opacity="0.7" Text="GPU / VE / VD load" />
+                            <TextBlock x:Name="AggregateGpuValueText" FontFamily="Segoe UI Variable Display" FontSize="28" FontWeight="SemiBold" Text="idle" />
+                            <TextBlock Opacity="0.75" Text="Highest active load" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Grid Grid.Row="2" ColumnDefinitions="3.2*,2*" ColumnSpacing="18">
+                    <Border Padding="16" Background="{StaticResource BatchCardBackgroundBrush}" BorderBrush="{StaticResource BatchCardBorderBrush}" BorderThickness="1" CornerRadius="16">
+                        <Grid RowDefinitions="Auto,*" RowSpacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock FontFamily="Segoe UI Variable Text" FontSize="20" FontWeight="SemiBold" Text="Queue" />
+                                <TextBlock Grid.Column="1" Opacity="0.7" Text="H.264 MP4 / aspect-safe resize" />
+                            </Grid>
+                            <ListView x:Name="JobsListView" Grid.Row="1" SelectionChanged="JobsListView_SelectionChanged" SelectionMode="Extended">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="local:EncodeJob">
+                                        <Border Margin="0,0,0,10" Padding="14" Background="{StaticResource BatchCardAltBackgroundBrush}" BorderBrush="{StaticResource BatchCardBorderBrush}" BorderThickness="1" CornerRadius="14">
+                                            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="6">
+                                                <TextBlock FontFamily="Segoe UI Variable Text" FontSize="17" FontWeight="SemiBold" Text="{x:Bind DisplayName}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Grid.Column="1" FontWeight="SemiBold" Text="{x:Bind StateLabel}" />
+                                                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Opacity="0.75" Text="{x:Bind OutputPath}" TextTrimming="CharacterEllipsis" />
+                                                <ProgressBar Grid.Row="2" Grid.ColumnSpan="2" Height="8" Maximum="100" Minimum="0" Value="{x:Bind ProgressPercent}" />
+                                                <TextBlock Grid.Row="3" Grid.ColumnSpan="2" FontFamily="Consolas" FontSize="12" Opacity="0.75" Text="{x:Bind ProgressLine}" TextWrapping="WrapWholeWords" />
+                                                <TextBlock Grid.Row="4" Grid.ColumnSpan="2" Foreground="{StaticResource BatchDetailForegroundBrush}" Text="{x:Bind DetailMessage}" TextWrapping="WrapWholeWords" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="1" Padding="16" Background="{StaticResource BatchCardBackgroundBrush}" BorderBrush="{StaticResource BatchCardBorderBrush}" BorderThickness="1" CornerRadius="16">
+                        <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock FontFamily="Segoe UI Variable Text" FontSize="20" FontWeight="SemiBold" Text="Command preview" />
+                                <TextBlock Grid.Column="1" Opacity="0.7" Text="Native JSON telemetry" />
+                            </Grid>
+                            <TextBox x:Name="CommandPreviewTextBox" Grid.Row="1" AcceptsReturn="True" FontFamily="Consolas" IsReadOnly="True" MinHeight="96" ScrollViewer.VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" />
+                            <TextBlock Grid.Row="2" FontFamily="Segoe UI Variable Text" FontSize="20" FontWeight="SemiBold" Text="Live log" />
+                            <TextBox x:Name="LogTextBox" Grid.Row="3" AcceptsReturn="True" FontFamily="Consolas" IsReadOnly="True" ScrollViewer.VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" />
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

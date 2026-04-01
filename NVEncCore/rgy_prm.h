@@ -2626,6 +2626,7 @@ struct RGYParamControl {
     int threadCsp;
     RGY_SIMD simdCsp;
     tstring logfile;              //ログ出力先
+    tstring telemetryJson;        //GUI向けJSON telemetry出力先
     RGYParamLogLevel loglevel; //ログ出力レベル
     RGYParamLogOpt logOpt;
     RGYDebugLogFile logFramePosList;     //framePosList出力
